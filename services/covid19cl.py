@@ -44,6 +44,6 @@ def show():
             try:
                 data_result[k] = int(data_result[k].replace('.', ''))
             except ValueError:
-                data_result[k] = 'TBD'
+                data_result[k] = None
 
     return jsonify(data_result)
