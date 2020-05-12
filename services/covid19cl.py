@@ -37,9 +37,10 @@ def show():
     data = [v['props']['content']['blocks'][0] for v in data
             if 'content' in v['props'] and len(v['props']['content']['blocks']) > 0]
 
+    data_result = {}
     for k, v in datamap.items():
-        datamap[k] = data[v]['text']
+        data_result[k] = data[v]['text']
         if k != 'fecha':
-            datamap[k] = int(datamap[k].replace('.', ''))
+            data_result[k] = int(data_result[k].replace('.', ''))
 
-    return jsonify(datamap)
+    return jsonify(data_result)
