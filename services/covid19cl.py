@@ -41,6 +41,9 @@ def show():
     for k, v in datamap.items():
         data_result[k] = data[v]['text']
         if k != 'fecha':
-            data_result[k] = int(data_result[k].replace('.', ''))
+            try:
+                data_result[k] = int(data_result[k].replace('.', ''))
+            except ValueError:
+                data_result[k] = 'TBD'
 
     return jsonify(data_result)
