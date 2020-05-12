@@ -3,7 +3,7 @@ import bs4
 from flask import Blueprint, jsonify
 
 BASE_URL = 'http://sismologia.cl'
-sismos_view = Blueprint('simple_page', __name__)
+view = Blueprint('sismos', __name__)
 
 
 def row_parse(row):
@@ -28,7 +28,7 @@ def row_parse(row):
     }
 
 
-@sismos_view.route('/sismos')
+@view.route('/sismos')
 def show():
     cont = requests.get(BASE_URL + '/links/ultimos_sismos.html')
     cont.encoding = 'utf-8'
