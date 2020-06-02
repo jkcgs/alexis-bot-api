@@ -24,7 +24,7 @@ datamap = {
     'fallecidos': 6,
     'fecha': 9
 }
-
+minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'activos', 'recuperados', 'fallecidos']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
@@ -80,7 +80,7 @@ def show():
             if 'content' in v['props'] and len(v['props']['content']['blocks']) > 0]
 
     # Initialize data with some metadata
-    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'ts_capturado': now}
+    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'pre_listo': True, 'ts_capturado': now}
 
     # Parse numeric data to its data type
     for k, v in datamap.items():
@@ -94,6 +94,8 @@ def show():
                 # disable the ready flag
                 data_result[k] = None
                 data_result['listo'] = False
+                if k in minimal_fields:
+                    data_result['pre_listo'] = False
 
     # Insert data as today's data's not on the DB
     db.insert_one(data_result)
