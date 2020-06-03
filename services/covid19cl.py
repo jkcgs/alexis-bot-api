@@ -108,7 +108,7 @@ def show():
         return jsonify(ytday_data)
 
     if data_result['pre_listo']:
-        data_result['recuperados'] = data_result['confirmados'] - data_result['fallecidos']
+        data_result['recuperados'] = data_result['confirmados'] - data_result['fallecidos'] - data_result['activos']
         data_result['total_nuevos'] = data_result['sintomaticos'] - data_result['asintomaticos']
 
     # Insert data as today's data on DB if it's ready
