@@ -12,19 +12,20 @@ db = Database.get_instance().db.get_collection('covid19cl')
 
 step1 = 'https://e.infogram.com/d9e30e4b-e63c-4e02-a72a-eca4653f3283'
 datamap = {
-    'asintomaticos': 21,
-    'conectados': 17,
-    'activos': 28,
-    'confirmados': 10,
-    'sintomaticos': 27,
+    'activos': 31,
+    'asintomaticos': 25,
+    'conectados': 21,
+    'confirmados': 12,
+    'criticos': 29,
+    'examenes': 35,
+    'fallecidos': 8,
+    'fecha': 11,
+    'rs_habitaciones': 5,
+    'rs_residencias': 17,
+    'sintomaticos': 30,
     'total_examenes': 1,
-    'recuperados': 4,
-    'criticos': 7,
-    'examenes': 32,
-    'fallecidos': 6,
-    'fecha': 9
 }
-minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'activos', 'recuperados', 'fallecidos']
+minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
@@ -80,7 +81,8 @@ def show():
             if 'content' in v['props'] and len(v['props']['content']['blocks']) > 0]
 
     # Initialize data with some metadata
-    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'pre_listo': True, 'ts_capturado': now}
+    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'pre_listo': True, 'ts_capturado': now,
+                   'total_nuevos': None, 'recuperados': None}
 
     # Parse numeric data to its data type
     for k, v in datamap.items():
@@ -97,8 +99,21 @@ def show():
                 if k in minimal_fields:
                     data_result['pre_listo'] = False
 
-    # Insert data as today's data's not on the DB
-    db.insert_one(data_result)
+    # If current infogram date's yesterday, fetch pre-yesterday data and send yesterday data from DB
+    if data_result['fecha'] == date_ytday:
+        pre_ytday = yesterday - timedelta(days=1)
+        date_preyt = '{} de {}'.format(pre_ytday.day, mes[pre_ytday.month])
+        preyt_data = db.find_one({'fecha': date_preyt, 'listo': True}, projection={'_id': 0})
+        ytday_data['ayer'] = clear_data(preyt_data, raw)
+        return jsonify(ytday_data)
+
+    if data_result['pre_listo']:
+        data_result['recuperados'] = data_result['confirmados'] - data_result['fallecidos']
+        data_result['total_nuevos'] = data_result['sintomaticos'] - data_result['asintomaticos']
+
+    # Insert data as today's data on DB if it's ready
+    if data_result['listo']:
+        db.insert_one(data_result)
 
     # Clear data and append yesterday's data
     data_result = clear_data(data_result, raw)
