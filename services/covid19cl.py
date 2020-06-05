@@ -10,13 +10,13 @@ from lib.database import Database
 view = Blueprint('covid19cl', __name__)
 db = Database.get_instance().db.get_collection('covid19cl')
 
-step1 = 'https://e.infogram.com/d9e30e4b-e63c-4e02-a72a-eca4653f3283'
+step1 = 'https://e.infogram.com/6353cb36-7c4e-4448-84e7-0acfe18703b6'
 datamap = {
     'activos': 31,
     'asintomaticos': 25,
     'conectados': 21,
     'confirmados': 12,
-    'criticos': 29,
+    'criticos': 9,
     'examenes': 35,
     'fallecidos': 8,
     'fecha': 11,
@@ -24,6 +24,7 @@ datamap = {
     'rs_residencias': 17,
     'sintomaticos': 30,
     'total_examenes': 1,
+    'ventiladores_disp': 29,
 }
 minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos', 'activos']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
@@ -109,7 +110,7 @@ def show():
 
     if data_result['pre_listo']:
         data_result['recuperados'] = data_result['confirmados'] - data_result['fallecidos'] - data_result['activos']
-        data_result['total_nuevos'] = data_result['sintomaticos'] - data_result['asintomaticos']
+        data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos']
 
     # Insert data as today's data on DB if it's ready
     if data_result['listo']:
