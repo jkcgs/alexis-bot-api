@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import datetime, timedelta
 
 import requests
@@ -9,8 +10,10 @@ from lib.database import Database
 
 view = Blueprint('covid19cl', __name__)
 db = Database.get_instance().db.get_collection('covid19cl')
+pat_infogram_uuid = re.compile(r'^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
 
-step1 = 'https://e.infogram.com/6353cb36-7c4e-4448-84e7-0acfe18703b6'
+step1 = 'https://www.gob.cl/coronavirus/cifrasoficiales/'
+step2 = 'https://e.infogram.com/'
 datamap = {
     'activos': 31,
     'asintomaticos': 25,
@@ -65,14 +68,21 @@ def show():
         return jsonify(today_data)
 
     # Today's data not found in database, scrap it from the website
-    infogram = requests.get(step1)
+    gobresult = requests.get(step1, headers={'User-Agent': __name__+'/1.0.0'})
+    infogram_id = find_str(gobresult.text, 'class="infogram-embed" data-id="', '"')
+    if not pat_infogram_uuid.match(infogram_id):
+        error_fetch = jsonify(message='Could not fetch today\'s data')
+        error_fetch.status_code = 500
+        return error_fetch
+
+    infogram = requests.get(step2 + infogram_id)
 
     # If data is not valid, return an error
     data = find_str(infogram.text, 'window.infographicData=', '</script>')
     if data is None:
-        response = jsonify(message='Could not fetch today\'s data')
-        response.status_code = 500
-        return response
+        error_fetch = jsonify(message='Could not fetch today\'s data')
+        error_fetch.status_code = 500
+        return error_fetch
 
     data_raw = json.loads(data.strip()[:-1])
     data = data_raw.copy()
