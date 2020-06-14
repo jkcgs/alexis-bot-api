@@ -15,19 +15,19 @@ pat_infogram_uuid = re.compile(r'^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
 step1 = 'https://www.gob.cl/coronavirus/cifrasoficiales/'
 step2 = 'https://e.infogram.com/'
 datamap = {
-    'activos': 31,
+    'activos': 32,
     'asintomaticos': 25,
     'conectados': 21,
     'confirmados': 12,
     'criticos': 9,
-    'examenes': 35,
+    'examenes': 36,
     'fallecidos': 8,
     'fecha': 11,
     'rs_habitaciones': 5,
     'rs_residencias': 17,
-    'sintomaticos': 30,
+    'sintomaticos': 31,
     'total_examenes': 1,
-    'ventiladores_disp': 29,
+    'ventiladores_disp': 30,
 }
 minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos', 'activos']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
