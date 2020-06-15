@@ -83,32 +83,16 @@ def show():
             return jsonify(today_data)
 
     # Get infogram ID from cache. If not available, fetch it from upstream.
-    infogram_id = db.get_cache('covid19_infogram_id')
-    updated_id = False
-    if not infogram_id:
-        err, infogram_id = get_infogram_id()
-        if err:
-            return err
-        db.set_cache('covid19_infogram_id', infogram_id)
-        updated_id = True
+    err, infogram_id = get_infogram_id()
+    if err:
+        return err
 
     # Load infogram data
     infogram = requests.get(step2 + infogram_id)
     if infogram.status_code != 200:
-        if not updated_id:
-            err, infogram_id = get_infogram_id()
-            if err:
-                return err
-            db.set_cache('covid19_infogram_id', infogram_id)
-        else:
-            error_fetch = jsonify(message='Could not fetch today\'s data (invalid upstream code)')
-            error_fetch.status_code = 500
-
-    infogram = requests.get(step2 + infogram_id)
-    if infogram.status_code != 200:
-        error_fetch = jsonify(message='Could not fetch today\'s data (invalid cached and upstream code)')
+        error_fetch = jsonify(message='Could not fetch today\'s data (invalid upstream code)')
         error_fetch.status_code = 500
-        return
+        return error_fetch
 
     # If data is not valid, return an error
     data = find_str(infogram.text, 'window.infographicData=', '</script>')
