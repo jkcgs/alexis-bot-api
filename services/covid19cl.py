@@ -9,25 +9,26 @@ from lib.common import find_str
 from lib.database import Database
 
 view = Blueprint('covid19cl', __name__)
-db = Database.get_instance().db.get_collection('covid19cl')
+db = Database.get_instance()
+coll = db.db.get_collection('covid19cl')
 pat_infogram_uuid = re.compile(r'^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
 
 step1 = 'https://www.gob.cl/coronavirus/cifrasoficiales/'
 step2 = 'https://e.infogram.com/'
 datamap = {
-    'activos': 32,
-    'asintomaticos': 25,
-    'conectados': 21,
-    'confirmados': 12,
-    'criticos': 9,
-    'examenes': 36,
-    'fallecidos': 8,
-    'fecha': 11,
-    'rs_habitaciones': 5,
-    'rs_residencias': 17,
-    'sintomaticos': 31,
-    'total_examenes': 1,
-    'ventiladores_disp': 30,
+    'activos': 3,
+    'asintomaticos': 26,
+    'conectados': 10,
+    'confirmados': 19,
+    'criticos': 12,
+    'examenes': 14,
+    'fallecidos': 23,
+    'fecha': 22,
+    'rs_habitaciones': 34,
+    'rs_residencias': 33,
+    'sintomaticos': 5,
+    'total_examenes': 15,
+    'ventiladores_disp': 32,
 }
 minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos', 'activos']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
@@ -48,48 +49,80 @@ def clear_data(data, raw=False):
     return data
 
 
+def get_infogram_id():
+    gobresult = requests.get(step1, headers={'User-Agent': __name__ + '/1.0.0'})
+    infogram_id = find_str(gobresult.text, 'class="infogram-embed" data-id="', '"')
+    if not pat_infogram_uuid.match(infogram_id):
+        error_fetch = jsonify(message='Could not fetch today\'s data (fetch upstream code)')
+        error_fetch.status_code = 500
+        return error_fetch, None
+    return None, infogram_id
+
+
 @view.route('/covid')
 def show():
     raw = request.args.get('raw', '')
+    use_cache = request.args.get('no_cache', '') != '1'
+
     now = datetime.now()
     yesterday = now - timedelta(days=1)
-    date_today = '{} de {}'.format(now.day, mes[now.month])
     date_ytday = '{} de {}'.format(yesterday.day, mes[yesterday.month])
 
     # Fetch data from database first
-    today_data = db.find_one({'fecha': date_today, 'listo': True}, projection={'_id': 0})
-    ytday_data = db.find_one({'fecha': date_ytday, 'listo': True}, projection={'_id': 0})
-
-    today_data = clear_data(today_data, raw)
+    ytday_data = coll.find_one({'fecha': date_ytday, 'listo': True}, projection={'_id': 0})
     ytday_data = clear_data(ytday_data, raw)
 
-    if today_data:
-        today_data['ayer'] = ytday_data
-        return jsonify(today_data)
+    if use_cache:
+        date_today = '{} de {}'.format(now.day, mes[now.month])
+        today_data = coll.find_one({'fecha': date_today, 'listo': True}, projection={'_id': 0})
+        today_data = clear_data(today_data, raw)
 
-    # Today's data not found in database, scrap it from the website
-    gobresult = requests.get(step1, headers={'User-Agent': __name__+'/1.0.0'})
-    infogram_id = find_str(gobresult.text, 'class="infogram-embed" data-id="', '"')
-    if not pat_infogram_uuid.match(infogram_id):
-        error_fetch = jsonify(message='Could not fetch today\'s data')
-        error_fetch.status_code = 500
-        return error_fetch
+        # Today's data not found in database, scrap it from the website
+        if today_data:
+            today_data['ayer'] = ytday_data
+            return jsonify(today_data)
+
+    # Get infogram ID from cache. If not available, fetch it from upstream.
+    infogram_id = db.get_cache('covid19_infogram_id')
+    updated_id = False
+    if not infogram_id:
+        err, infogram_id = get_infogram_id()
+        if err:
+            return err
+        db.set_cache('covid19_infogram_id', infogram_id)
+        updated_id = True
+
+    # Load infogram data
+    infogram = requests.get(step2 + infogram_id)
+    if infogram.status_code != 200:
+        if not updated_id:
+            err, infogram_id = get_infogram_id()
+            if err:
+                return err
+            db.set_cache('covid19_infogram_id', infogram_id)
+        else:
+            error_fetch = jsonify(message='Could not fetch today\'s data (invalid upstream code)')
+            error_fetch.status_code = 500
 
     infogram = requests.get(step2 + infogram_id)
+    if infogram.status_code != 200:
+        error_fetch = jsonify(message='Could not fetch today\'s data (invalid cached and upstream code)')
+        error_fetch.status_code = 500
+        return
 
     # If data is not valid, return an error
     data = find_str(infogram.text, 'window.infographicData=', '</script>')
     if data is None:
-        error_fetch = jsonify(message='Could not fetch today\'s data')
+        error_fetch = jsonify(message='Could not fetch today\'s data (invalid data)')
         error_fetch.status_code = 500
         return error_fetch
 
     data_raw = json.loads(data.strip()[:-1])
-    data = data_raw.copy()
-    data = data['elements']['content']['content']['entities']
-    data = [v for k, v in data.items() if v['type'] in ['TEXT', 'SHAPE']]
-    data = [v['props']['content']['blocks'][0]['text'] for v in data
-            if 'content' in v['props'] and len(v['props']['content']['blocks']) > 0]
+
+    content = data_raw['elements']['content']['content']
+    entities = content['blocks'][content['blockOrder'][0]]['entities']
+    data = [content['entities'][x]['props'] for x in entities]
+    data = [y['content']['blocks'][0].get('text', '') for y in data if 'content' in y]
 
     # Initialize data with some metadata
     data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'pre_listo': True, 'ts_capturado': now,
@@ -114,7 +147,7 @@ def show():
     if data_result['fecha'] == date_ytday:
         pre_ytday = yesterday - timedelta(days=1)
         date_preyt = '{} de {}'.format(pre_ytday.day, mes[pre_ytday.month])
-        preyt_data = db.find_one({'fecha': date_preyt, 'listo': True}, projection={'_id': 0})
+        preyt_data = coll.find_one({'fecha': date_preyt, 'listo': True}, projection={'_id': 0})
         ytday_data['ayer'] = clear_data(preyt_data, raw)
         return jsonify(ytday_data)
 
@@ -123,8 +156,8 @@ def show():
         data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos']
 
     # Insert data as today's data on DB if it's ready
-    if data_result['listo']:
-        db.insert_one(data_result)
+    if data_result['listo'] and not use_cache:
+        coll.insert_one(data_result)
 
     # Clear data and append yesterday's data
     data_result = clear_data(data_result, raw)

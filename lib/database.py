@@ -16,10 +16,20 @@ class Database:
 
     def __init__(self):
         self.db = None
+        self.cache = None
 
         # Initialize database connection
         log.info('Connecting to the database...')
         client = MongoClient('mongodb://127.0.0.1:27017/apidata')
         self.db = client.get_database()
+        self.cache = self.db.get_collection('datacache')
 
         log.info('Connected to the database, name: %s', self.db.name)
+
+    def get_cache(self, name, default=''):
+        result = self.cache.find_one({'name': name})
+        return default if result is None else result.get('value', default)
+
+    def set_cache(self, name, value):
+        return self.cache.update_one({'name': name}, {'$set': {'value': value}}, upsert=True)
+
