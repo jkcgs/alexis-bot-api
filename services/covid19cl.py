@@ -156,7 +156,7 @@ def show():
         data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos']
 
     # Insert data as today's data on DB if it's ready
-    if data_result['listo'] and not use_cache:
+    if data_result['listo'] and use_cache:
         coll.insert_one(data_result)
 
     # Clear data and append yesterday's data
