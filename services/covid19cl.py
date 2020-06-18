@@ -31,7 +31,7 @@ datamap = {
     'total_examenes': 15,
     'ventiladores_disp': 32,
 }
-minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos', 'activos']
+minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos', 'activos', 'sin_notificar']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
