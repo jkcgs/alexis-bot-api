@@ -27,6 +27,7 @@ datamap = {
     'rs_habitaciones': 34,
     'rs_residencias': 33,
     'sintomaticos': 5,
+    'sin_notificar': 43,
     'total_examenes': 15,
     'ventiladores_disp': 32,
 }
