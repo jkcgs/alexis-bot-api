@@ -16,22 +16,21 @@ pat_infogram_uuid = re.compile(r'^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
 step1 = 'https://www.gob.cl/coronavirus/cifrasoficiales/'
 step2 = 'https://e.infogram.com/'
 datamap = {
-    'activos': 3,
-    'asintomaticos': 26,
-    'conectados': 10,
-    'confirmados': 19,
-    'criticos': 12,
-    'examenes': 14,
-    'fallecidos': 23,
-    'fecha': 22,
-    'rs_habitaciones': 34,
-    'rs_residencias': 33,
-    'sintomaticos': 5,
-    'sin_notificar': 43,
-    'total_examenes': 15,
-    'ventiladores_disp': 32,
+    'activos': 1,
+    'asintomaticos': 23,
+    'conectados': 8,
+    'confirmados': 17,
+    'criticos': 10,
+    'examenes': 12,
+    'fallecidos': 20,
+    'fecha': 39,
+    'rs_habitaciones': 31,
+    'rs_residencias': 30,
+    'sintomaticos': 3,
+    'sin_notificar': 37,
+    'total_examenes': 13,
+    'ventiladores_disp': 29,
 }
-minimal_fields = ['confirmados', 'sintomaticos', 'asintomaticos', 'fallecidos', 'activos', 'sin_notificar']
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
 
@@ -110,7 +109,7 @@ def show():
     data = [y['content']['blocks'][0].get('text', '') for y in data if 'content' in y]
 
     # Initialize data with some metadata
-    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'pre_listo': True, 'ts_capturado': now,
+    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'ts_capturado': now,
                    'total_nuevos': None, 'recuperados': None}
 
     # Parse numeric data to its data type
@@ -125,8 +124,9 @@ def show():
                 # disable the ready flag
                 data_result[k] = None
                 data_result['listo'] = False
-                if k in minimal_fields:
-                    data_result['pre_listo'] = False
+
+    # Normalize date
+    data_result['fecha'] = data_result['fecha'].lower().replace('cifras oficiales ', '')
 
     # If current infogram date's yesterday, fetch pre-yesterday data and send yesterday data from DB
     if data_result['fecha'] == date_ytday:
@@ -136,9 +136,9 @@ def show():
         ytday_data['ayer'] = clear_data(preyt_data, raw)
         return jsonify(ytday_data)
 
-    if data_result['pre_listo']:
+    if data_result['listo']:
         data_result['recuperados'] = data_result['confirmados'] - data_result['fallecidos'] - data_result['activos']
-        data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos']
+        data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos'] + data_result['sin_notificar']
 
     # Insert data as today's data on DB if it's ready
     if data_result['listo'] and use_cache:
