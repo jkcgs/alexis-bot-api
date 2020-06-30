@@ -16,20 +16,25 @@ pat_infogram_uuid = re.compile(r'^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$')
 step1 = 'https://www.gob.cl/coronavirus/cifrasoficiales/'
 step2 = 'https://e.infogram.com/'
 datamap = {
-    'activos': 1,
-    'asintomaticos': 23,
-    'conectados': 8,
-    'confirmados': 17,
-    'criticos': 10,
-    'examenes': 12,
-    'fallecidos': 20,
-    'fecha': 39,
-    'rs_habitaciones': 31,
-    'rs_residencias': 30,
-    'sintomaticos': 3,
-    'sin_notificar': 37,
-    'total_examenes': 13,
-    'ventiladores_disp': 29,
+    'activos': 10,
+    'asintomaticos': 14,
+    'conectados': 44,
+    'confirmados': 9,
+    'criticos': 42,
+    'examenes': 31,
+    'examenes_positividad': 35,
+    'fallecidos': 23,
+    'fecha': 5,
+    'uci': 40,
+    'recuperados': 12,
+    'rs_habitaciones': 50,
+    'rs_habitaciones_ocupadas': 52,
+    'rs_residencias': 54,
+    'sintomaticos': 2,
+    'sin_notificar': 16,
+    'total_examenes': 30,
+    'total_positividad': 33,
+    'ventiladores_disp': 48,
 }
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
@@ -107,15 +112,17 @@ def show():
     entities = content['blocks'][content['blockOrder'][0]]['entities']
     data = [content['entities'][x]['props'] for x in entities]
     data = [y['content']['blocks'][0].get('text', '') for y in data if 'content' in y]
+    data = [y for y in data if y.strip() != '']
 
     # Initialize data with some metadata
-    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'ts_capturado': now,
-                   'total_nuevos': None, 'recuperados': None}
+    data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'ts_capturado': now, 'total_nuevos': None}
 
     # Parse numeric data to its data type
     for k, v in datamap.items():
         data_result[k] = data[v]
-        if k not in ['fecha', 'ts_capturado', 'raw', 'datamap', 'listo']:
+        fields_ignore = ['fecha', 'ts_capturado', 'raw', 'datamap', 'listo', 'examenes_positividad',
+                         'total_positividad']
+        if k not in fields_ignore:
             try:
                 # noinspection PyTypeChecker
                 data_result[k] = int(data_result[k].replace('.', ''))
@@ -137,7 +144,6 @@ def show():
         return jsonify(ytday_data)
 
     if data_result['listo']:
-        data_result['recuperados'] = data_result['confirmados'] - data_result['fallecidos'] - data_result['activos']
         data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos'] + data_result['sin_notificar']
 
     # Insert data as today's data on DB if it's ready
