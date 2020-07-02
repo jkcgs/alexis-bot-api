@@ -23,7 +23,7 @@ datamap = {
     'criticos': 41,
     'examenes': 31,
     'examenes_positividad': 35,
-    'fallecidos': 24,
+    'fallecidos': 23,
     'fecha': 5,
     'uci': 39,
     'recuperados': 12,
@@ -136,7 +136,7 @@ def show():
     data_result['fecha'] = data_result['fecha'].lower().replace('cifras oficiales ', '')
 
     # If current infogram date's yesterday, fetch pre-yesterday data and send yesterday data from DB
-    if data_result['fecha'] == date_ytday:
+    if use_cache and data_result['fecha'] == date_ytday:
         pre_ytday = yesterday - timedelta(days=1)
         date_preyt = '{} de {}'.format(pre_ytday.day, mes[pre_ytday.month])
         preyt_data = coll.find_one({'fecha': date_preyt, 'listo': True}, projection={'_id': 0})
