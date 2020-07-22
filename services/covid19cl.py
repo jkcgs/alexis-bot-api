@@ -23,7 +23,7 @@ datamap = {
     'criticos': 40,
     'examenes': 30,
     'examenes_positividad': 34,
-    'fallecidos': 23,
+    'fallecidos': 22,
     'fecha': 5,
     'uci': 38,
     'recuperados': 12,
