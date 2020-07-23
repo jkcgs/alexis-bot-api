@@ -19,7 +19,7 @@ datamap = {
     'activos': 10,
     'asintomaticos': 14,
     'conectados': 42,
-    'confirmados': 13,
+    'confirmados': 9,
     'criticos': 40,
     'examenes': 30,
     'examenes_positividad': 34,
