@@ -133,7 +133,7 @@ def show():
                 data_result['listo'] = False
 
     # Normalize date
-    data_result['fecha'] = data_result['fecha'].lstrip('0').lower().replace('cifras oficiales ', '')
+    data_result['fecha'] = data_result['fecha'].lstrip('0').lower().replace('cifras oficiales ', '').strip()
 
     # If current infogram date's yesterday, fetch pre-yesterday data and send yesterday data from DB
     if data_result['fecha'] == date_ytday:
