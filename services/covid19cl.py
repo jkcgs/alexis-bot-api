@@ -112,7 +112,7 @@ def show():
     entities = content['blocks'][content['blockOrder'][0]]['entities']
     data = [content['entities'][x]['props'] for x in entities]
     data = [y['content']['blocks'][0].get('text', '') for y in data if 'content' in y]
-    data = [y for y in data if y.strip() != '']
+    data = [y.strip() for y in data if y.strip() != '']
 
     # Initialize data with some metadata
     data_result = {'raw': data, 'datamap': datamap, 'listo': True, 'ts_capturado': now, 'total_nuevos': None}
