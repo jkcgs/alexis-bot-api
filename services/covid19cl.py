@@ -27,14 +27,14 @@ datamap = {
     'fecha': 5,
     'uci': 38,
     'recuperados': 12,
-    'rs_habitaciones': 48,
-    'rs_habitaciones_ocupadas': 50,
-    'rs_residencias': 52,
+    'rs_habitaciones': 47,
+    'rs_habitaciones_ocupadas': 49,
+    'rs_residencias': 51,
     'sintomaticos': 2,
     'sin_notificar': 16,
     'total_examenes': 29,
     'total_positividad': 32,
-    'ventiladores_disp': 46,
+    'ventiladores_disp': 45,
 }
 mes = ['', 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio',
        'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre']
@@ -136,15 +136,16 @@ def show():
     data_result['fecha'] = data_result['fecha'].lstrip('0').lower().replace('cifras oficiales ', '').strip()
 
     # If current infogram date's yesterday, fetch pre-yesterday data and send yesterday data from DB
-    if data_result['fecha'] == date_ytday:
+    if data_result['fecha'] == date_ytday and ytday_data is not None:
         pre_ytday = yesterday - timedelta(days=1)
         date_preyt = '{} de {}'.format(pre_ytday.day, mes[pre_ytday.month])
         preyt_data = coll.find_one({'fecha': date_preyt, 'listo': True}, projection={'_id': 0})
         ytday_data['ayer'] = clear_data(preyt_data, raw)
         return jsonify(ytday_data)
 
-    if data_result['listo']:
-        data_result['total_nuevos'] = data_result['sintomaticos'] + data_result['asintomaticos'] + data_result['sin_notificar']
+    cases_fields = ['sintomaticos', 'asintomaticos', 'sin_notificar']
+    if all(field in data_result and isinstance(data_result[field], int) for field in cases_fields):
+        data_result['total_nuevos'] = sum(data_result[field] for field in cases_fields)
 
     # Insert data as today's data on DB if it's ready
     if data_result['listo'] and use_cache:
